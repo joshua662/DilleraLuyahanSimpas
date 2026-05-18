@@ -1,28 +1,22 @@
-import type { FC, ReactNode } from "react"
-import { useAuth } from "../contexts/AuthContext"
-import Spinner from "../components/Spinner/Spinner"
-import { Navigate } from "react-router-dom"
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import type { ReactNode } from "react";
 
-interface ProtectedRouteProps {
-    children: ReactNode
-}
+const ProtectedRoute = ({ children, adminOnly = false }: { children: ReactNode; adminOnly?: boolean }) => {
+  const { user, loading } = useAuth();
 
-const ProtectedRoute: FC<ProtectedRouteProps> = ({children}) => {
-    const {user, loading} = useAuth()
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-sky border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-    if(loading) {
-        return (
-            <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
-                <Spinner size="lg"/>
-            </div>
-        );
-    }
+  if (!user) return <Navigate to="/login" replace />;
+  if (adminOnly && user.role !== "admin") return <Navigate to="/" replace />;
 
-    if(!user) {
-        return <Navigate to="/" replace />
-    }
-
-  return <>{children}</>
+  return <>{children}</>;
 };
 
-export default ProtectedRoute
+export default ProtectedRoute;

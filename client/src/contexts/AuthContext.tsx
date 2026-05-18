@@ -1,100 +1,74 @@
 import { createContext, useContext, useEffect, useState, type FC, type ReactNode } from "react";
-import type { UserDetails } from "../interfaces/AuthInterface";
+import type { User } from "../interfaces/types";
 import AuthService from "../services/AuthService";
 
 interface AuthContextType {
-  user: UserDetails | null;
+  user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => void;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<User>;
+  register: (data: { name: string; email: string; phone?: string; password: string; password_confirmation: string }) => Promise<void>;
+  logout: () => Promise<void>;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserDetails | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const login = async (username: string, password: string) => {
-    try {
-      const res = await AuthService.login({ username, password });
-
-      if (res.status === 200) {
-        localStorage.setItem("token", res.data.token);
-        setUser(res.data);
-      } else {
-        console.error("Unexpected status error occured during logging user in: ", res.status);
-      }
-    } catch (error) {
-      console.error("Unexpected server error occured during logging user in: ", error);
-      throw error;
+  const checkAuth = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      return;
     }
+    try {
+      const res = await AuthService.me();
+      setUser(res.data.user);
+    } catch {
+      localStorage.removeItem("token");
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void checkAuth();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    const res = await AuthService.login({ email, password });
+    localStorage.setItem("token", res.data.token);
+    setUser(res.data.user);
+    return res.data.user;
+  };
+
+  const register = async (data: { name: string; email: string; phone?: string; password: string; password_confirmation: string }) => {
+    const res = await AuthService.register(data);
+    localStorage.setItem("token", res.data.token);
+    setUser(res.data.user);
   };
 
   const logout = async () => {
     try {
-      const res = await AuthService.logout();
-
-      if (res.status === 200) {
-        localStorage.removeItem("token");
-        setUser(null);
-      } else {
-        console.error("Unexpected status error during logging user out: ", res.status);
-      }
-    } catch (error) {
-      console.error("Unexpected server error occured during logging user out: ", error);
-      throw error;
-    }
-  };
-
-  const checkAuth = async () => {
-    setLoading(true);
-
-    const token = localStorage.getItem("token");
-
-    if (token) {
-      try {
-        const res = await AuthService.me();
-
-        if (res.status === 200) {
-          setUser(res.data);
-        } else {
-          localStorage.removeItem("token");
-          setUser(null);
-          console.error("Unexpected status error occured during checking authentication: ", res.status);
-        }
-      } catch (error) {
-        localStorage.removeItem("token");
-        setUser(null);
-        console.error("Unexpected server error occured during checking authentication: ", error);
-      }
-      setLoading(false);
-    } else {
+      await AuthService.logout();
+    } finally {
+      localStorage.removeItem("token");
       setUser(null);
-      setLoading(false);
     }
-
   };
-
-  useEffect(() => {
-    queueMicrotask(() => void checkAuth());
-  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, isAdmin: user?.role === "admin" }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = (): AuthContextType => { // eslint-disable-line react-refresh/only-export-components
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-
-  return context;
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
 };
-
-export default AuthContext;

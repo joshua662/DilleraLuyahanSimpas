@@ -1,23 +1,26 @@
 import AxiosInstance from "./AxiosInstance";
+import type { User } from "../interfaces/types";
 
-interface LoginData {
-  username: string;
+export interface LoginPayload {
+  email: string;
   password: string;
 }
 
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  phone?: string;
+  password: string;
+  password_confirmation: string;
+}
+
 const AuthService = {
-  login: async (data: LoginData) => {
-    const response = await AxiosInstance.post("/auth/login", data);
-    return response;
-  },
-  logout: async () => {
-    const response = await AxiosInstance.post("/auth/logout");
-    return response;
-  },
-  me: async () => {
-    const response = await AxiosInstance.get("/auth/me");
-    return response;
-  },
+  login: (data: LoginPayload) =>
+    AxiosInstance.post<{ user: User; token: string }>("/auth/login", data),
+  register: (data: RegisterPayload) =>
+    AxiosInstance.post<{ user: User; token: string }>("/auth/register", data),
+  logout: () => AxiosInstance.post("/auth/logout"),
+  me: () => AxiosInstance.get<{ user: User }>("/auth/me"),
 };
 
 export default AuthService;

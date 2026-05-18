@@ -28,6 +28,19 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'sms' => [
+        'enabled' => env('SMS_ENABLED', false),
+        'api_key' => env('SMS_API_KEY'),
+        'provider' => env('SMS_PROVIDER', 'semaphore'),
+        'sender_name' => env('SMS_SENDER_NAME', 'MDVLaundry'),
+        'webhook_url' => env('SMS_WEBHOOK_URL'),
+    ],
+
+    'telegram' => [
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        'chat_id' => env('TELEGRAM_CHAT_ID'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

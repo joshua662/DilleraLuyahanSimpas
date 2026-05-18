@@ -2,54 +2,29 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasApiTokens, HasFactory, Notifiable;
 
-    protected $table = 'tbl_users';
-    protected $primaryKey = 'user_id';
-     /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
-        'profile_picture',
-        'first_name',
-        'middle_name',
-        'last_name',
-        'suffix_name',
-        'gender_id',
-        'birth_date',
-        'age',
-        'username',
+        'name',
+        'email',
+        'phone',
         'password',
-        'is_deleted'
+        'role',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
+        'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -57,8 +32,18 @@ class User extends Authenticatable
         ];
     }
 
-    public function gender(): BelongsTo
+    public function bookings(): HasMany
     {
-        return $this->belongsTo(Gender::class, 'gender_id', 'gender_id');
+        return $this->hasMany(Booking::class);
+    }
+
+    public function userNotifications(): HasMany
+    {
+        return $this->hasMany(UserNotification::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 }
