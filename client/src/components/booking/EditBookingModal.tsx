@@ -2,13 +2,15 @@ import { useEffect, useState, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2, Calendar } from "lucide-react";
 import AddressAutocomplete from "./AddressAutocomplete";
-import StatusTimeline from "./StatusTimeline";
-import type { Booking, BookingStatus } from "../../interfaces/types";
+import type { Booking } from "../../interfaces/types";
 import BookingService from "../../services/BookingService";
-import AdminService from "../../services/AdminService";
-import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
-import { calculatePrice, STATUS_LABELS } from "../../utils/constants";
+import {
+  calculatePrice,
+  formatPickupTime12h,
+  PAYMENT_METHODS,
+  PICKUP_TIME_SLOTS,
+} from "../../utils/constants";
 
 interface Props {
   booking: Booking | null;
@@ -17,16 +19,9 @@ interface Props {
   onSaved: () => void;
 }
 
-const isFinished = (b: Booking) =>
-  b.is_finished || b.is_done || b.status === "done" || b.status === "delivered";
-
 const EditBookingModal = ({ booking, open, onClose, onSaved }: Props) => {
-  const { isAdmin } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [statusUpdating, setStatusUpdating] = useState(false);
-  const [status, setStatus] = useState<BookingStatus>("pending");
-  const [isDone, setIsDone] = useState(false);
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
@@ -43,8 +38,6 @@ const EditBookingModal = ({ booking, open, onClose, onSaved }: Props) => {
 
   useEffect(() => {
     if (!booking || !open) return;
-    setStatus(booking.status);
-    setIsDone(booking.is_done);
     setForm({
       full_name: booking.full_name,
       phone: booking.phone,
@@ -53,7 +46,7 @@ const EditBookingModal = ({ booking, open, onClose, onSaved }: Props) => {
       pickup_time: booking.pickup_time,
       weight: booking.weight,
       notes: booking.notes || "",
-      payment_method: booking.payment_method || "cash",
+      payment_method: booking.payment_method === "gcash" ? "gcash" : "cash",
       latitude: booking.latitude,
       longitude: booking.longitude,
     });
@@ -62,40 +55,14 @@ const EditBookingModal = ({ booking, open, onClose, onSaved }: Props) => {
 
   if (!booking) return null;
 
-  const canUpdateStatus = isAdmin && booking.status !== "cancelled" && !isFinished(booking);
-
-  const handleStatusSelect = async (newStatus: BookingStatus) => {
-    if (!isAdmin) {
-      showToast("Only laundry staff can update order status", "error");
+  const handleWeightChange = (raw: string) => {
+    if (raw === "") {
+      setForm((f) => ({ ...f, weight: 0 }));
       return;
     }
-    const label = STATUS_LABELS[newStatus] || newStatus;
-    if (!confirm(`Set status to "${label}"? Customer will be notified.`)) return;
-
-    setStatusUpdating(true);
-    try {
-      if (newStatus === "done") {
-        await AdminService.markDone(booking.id);
-        setStatus("done");
-        setIsDone(true);
-        showToast("Marked as Finished — customer notified");
-      } else {
-        await AdminService.updateBookingStatus(booking.id, newStatus);
-        setStatus(newStatus);
-        showToast(`Status: ${label} — customer notified`);
-      }
-      onSaved();
-    } catch {
-      showToast("Failed to update status", "error");
-    } finally {
-      setStatusUpdating(false);
-    }
-  };
-
-  const handleWeightChange = (raw: string) => {
     const parsed = parseFloat(raw);
-    if (Number.isNaN(parsed) || parsed < 1) {
-      setForm((f) => ({ ...f, weight: 1 }));
+    if (Number.isNaN(parsed) || parsed < 0) {
+      setForm((f) => ({ ...f, weight: 0 }));
       return;
     }
     setForm((f) => ({ ...f, weight: Math.min(100, parsed) }));
@@ -107,7 +74,7 @@ const EditBookingModal = ({ booking, open, onClose, onSaved }: Props) => {
     if (!form.phone.trim()) e.phone = "Phone is required";
     if (!form.address.trim()) e.address = "Address is required";
     if (!form.pickup_date) e.pickup_date = "Pickup date is required";
-    if (form.weight < 1) e.weight = "Minimum weight is 1 kg";
+    if (form.weight < 0) e.weight = "Weight cannot be negative";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -155,26 +122,6 @@ const EditBookingModal = ({ booking, open, onClose, onSaved }: Props) => {
             </div>
 
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              {booking.status !== "cancelled" && (
-                <div className="pb-4 border-b border-border dark:border-slate-700">
-                  <label className="block text-sm font-medium mb-2">Order Status</label>
-                  <StatusTimeline
-                    status={status}
-                    isDone={isDone}
-                    animate={false}
-                    compact
-                    interactive={canUpdateStatus}
-                    updating={statusUpdating}
-                    onStatusSelect={(s) => void handleStatusSelect(s)}
-                  />
-                  {!isAdmin && (
-                    <p className="text-xs text-muted mt-2">
-                      Status updates are done by the laundry shop. You will be notified when laundry is finished.
-                    </p>
-                  )}
-                </div>
-              )}
-
               <div>
                 <label className="block text-sm font-medium mb-1">Full Name</label>
                 <input
@@ -226,8 +173,10 @@ const EditBookingModal = ({ booking, open, onClose, onSaved }: Props) => {
                     onChange={(e) => setForm({ ...form, pickup_time: e.target.value })}
                     className="w-full px-3 py-2.5 rounded-xl border border-border dark:border-slate-600 bg-surface dark:bg-slate-900 focus:ring-2 focus:ring-sky outline-none"
                   >
-                    {["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"].map((t) => (
-                      <option key={t} value={t}>{t}</option>
+                    {PICKUP_TIME_SLOTS.map((t) => (
+                      <option key={t} value={t}>
+                        {formatPickupTime12h(t)}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -236,9 +185,9 @@ const EditBookingModal = ({ booking, open, onClose, onSaved }: Props) => {
                 <label className="block text-sm font-medium mb-1">Weight (kg)</label>
                 <input
                   type="number"
-                  min={1}
+                  min={0}
                   max={100}
-                  step={0.5}
+                  step={1}
                   value={form.weight}
                   onChange={(e) => handleWeightChange(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl border border-border dark:border-slate-600 bg-surface dark:bg-slate-900 focus:ring-2 focus:ring-sky outline-none"
@@ -253,10 +202,11 @@ const EditBookingModal = ({ booking, open, onClose, onSaved }: Props) => {
                   onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-xl border border-border dark:border-slate-600 bg-surface dark:bg-slate-900 focus:ring-2 focus:ring-sky outline-none"
                 >
-                  <option value="cash">Cash</option>
-                  <option value="gcash">GCash</option>
-                  <option value="maya">Maya</option>
-                  <option value="card">Card</option>
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>

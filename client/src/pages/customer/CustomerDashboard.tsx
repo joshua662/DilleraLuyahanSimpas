@@ -191,7 +191,7 @@ const CustomerDashboard = () => {
     <motion.div className="py-12 max-w-4xl mx-auto px-4 sm:px-6 pb-28 md:pb-12">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-wrap justify-between items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-navy dark:text-white">{isAdmin ? "Manage Bookings" : "My Bookings"}</h1>
+          <h1 className="text-3xl font-bold text-navy dark:text-white">{isAdmin ? "Manage Bookings" : "Laundry Update"}</h1>
           <p className="text-muted">
             {isAdmin ? "Tap a status to notify the customer" : `Welcome back, ${user?.name}`}
           </p>
@@ -200,19 +200,6 @@ const CustomerDashboard = () => {
           <Plus className="w-5 h-5" /> New Booking
         </Link>
       </motion.div>
-
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {[
-          { label: "Total", value: bookings.length },
-          { label: "Active", value: active.length },
-          { label: "Finished", value: completed.length },
-        ].map((s) => (
-          <div key={s.label} className="bg-white dark:bg-slate-800 rounded-xl p-4 card-shadow border border-border dark:border-slate-700 text-center">
-            <p className="text-2xl font-bold">{s.value}</p>
-            <p className="text-xs text-muted">{s.label}</p>
-          </div>
-        ))}
-      </div>
 
       <div className="flex gap-2 mb-6">
         <button

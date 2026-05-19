@@ -115,6 +115,10 @@ class Booking extends Model
 
     public static function calculatePrice(float $weight): float
     {
+        if ($weight <= 0) {
+            return 0;
+        }
+
         $baseWeight = 8;
         $basePrice = 99;
         $extraPerKg = 12;

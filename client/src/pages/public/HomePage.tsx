@@ -47,7 +47,7 @@ const HomePage = () => (
       <motion.div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-center gap-2 text-center">
         <span className="text-2xl font-black">₱99</span>
         <span className="font-semibold">per 8KG — Wash, Dry & Fold Package</span>
-        <Link to="/pricing" className="underline font-medium hover:no-underline">View pricing →</Link>
+        <Link to="/booking" className="underline font-medium hover:no-underline">Book now →</Link>
       </motion.div>
     </section>
 

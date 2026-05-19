@@ -20,9 +20,9 @@ class StoreBookingRequest extends FormRequest
             'address' => ['required', 'string'],
             'pickup_date' => ['required', 'date', 'after_or_equal:today'],
             'pickup_time' => ['required', 'string', 'max:10'],
-            'weight' => ['required', 'numeric', 'min:1', 'max:100'],
+            'weight' => ['required', 'numeric', 'min:0', 'max:100'],
             'notes' => ['nullable', 'string', 'max:500'],
-            'payment_method' => ['nullable', 'string', 'in:cash,gcash,maya,card'],
+            'payment_method' => ['nullable', 'string', 'in:cash,gcash'],
             'latitude' => ['nullable', 'numeric'],
             'longitude' => ['nullable', 'numeric'],
         ];

@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useCallback, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Calendar, Loader2, MessageSquare, Bell, CheckCircle } from "lucide-react";
@@ -7,9 +7,43 @@ import AddressAutocomplete from "../../components/booking/AddressAutocomplete";
 import { useToast } from "../../contexts/ToastContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotifications } from "../../contexts/NotificationContext";
-import { calculatePrice } from "../../utils/constants";
+import {
+  calculatePrice,
+  formatPickupTime12h,
+  PAYMENT_METHODS,
+  PICKUP_TIME_SLOTS,
+} from "../../utils/constants";
 import { sendBookingSms } from "../../utils/sms";
 import type { Booking } from "../../interfaces/types";
+import type { User } from "../../interfaces/types";
+
+type BookingForm = {
+  full_name: string;
+  phone: string;
+  email: string;
+  address: string;
+  pickup_date: string;
+  pickup_time: string;
+  weight: number;
+  notes: string;
+  payment_method: string;
+  latitude: number | undefined;
+  longitude: number | undefined;
+};
+
+const createInitialForm = (user: User | null): BookingForm => ({
+  full_name: user?.name || "",
+  phone: user?.phone || "",
+  email: user?.email || "",
+  address: "",
+  pickup_date: "",
+  pickup_time: "10:00",
+  weight: 0,
+  notes: "",
+  payment_method: "cash",
+  latitude: undefined,
+  longitude: undefined,
+});
 
 const BookingPage = () => {
   const { user } = useAuth();
@@ -17,39 +51,40 @@ const BookingPage = () => {
   const { refresh: refreshNotifications } = useNotifications();
   const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState<Booking | null>(null);
-  const [form, setForm] = useState({
-    full_name: "",
-    phone: "",
-    email: "",
-    address: "",
-    pickup_date: "",
-    pickup_time: "10:00",
-    weight: 1,
-    notes: "",
-    payment_method: "cash",
-    latitude: undefined as number | undefined,
-    longitude: undefined as number | undefined,
-  });
+  const [form, setForm] = useState<BookingForm>(() => createInitialForm(user));
+  const [weightInput, setWeightInput] = useState("0");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (user) {
-      setForm((f) => ({
-        ...f,
-        full_name: user.name || f.full_name,
-        phone: user.phone || f.phone,
-        email: user.email || f.email,
-      }));
-    }
+  const resetForm = useCallback(() => {
+    setForm(createInitialForm(user));
+    setWeightInput("0");
+    setErrors({});
   }, [user]);
 
+  useEffect(() => {
+    resetForm();
+  }, [user, resetForm]);
+
   const handleWeightChange = (raw: string) => {
-    const parsed = parseFloat(raw);
-    if (Number.isNaN(parsed) || parsed < 1) {
-      setForm((f) => ({ ...f, weight: 1 }));
+    if (raw === "") {
+      setWeightInput("");
+      setForm((f) => ({ ...f, weight: 0 }));
       return;
     }
-    setForm((f) => ({ ...f, weight: Math.min(100, parsed) }));
+    if (!/^\d*\.?\d*$/.test(raw)) return;
+    setWeightInput(raw);
+    const parsed = parseFloat(raw);
+    setForm((f) => ({
+      ...f,
+      weight: Number.isNaN(parsed) ? 0 : Math.min(100, Math.max(0, parsed)),
+    }));
+  };
+
+  const handleWeightBlur = () => {
+    if (weightInput === "" || weightInput === ".") {
+      setWeightInput("0");
+      setForm((f) => ({ ...f, weight: 0 }));
+    }
   };
 
   const validate = () => {
@@ -58,7 +93,7 @@ const BookingPage = () => {
     if (!form.phone.trim()) e.phone = "Phone is required";
     if (!form.address.trim()) e.address = "Address is required";
     if (!form.pickup_date) e.pickup_date = "Pickup date is required";
-    if (form.weight < 1) e.weight = "Minimum weight is 1 kg";
+    if (form.weight < 0) e.weight = "Weight cannot be negative";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -76,7 +111,6 @@ const BookingPage = () => {
     ev.preventDefault();
     if (!validate()) return;
     setLoading(true);
-    setConfirmed(null);
     try {
       const res = await BookingService.create(form);
       const booking = res.data.booking;
@@ -85,7 +119,7 @@ const BookingPage = () => {
       if (user) {
         await refreshNotifications();
       }
-      setForm((f) => ({ ...f, address: "", notes: "", pickup_date: "" }));
+      resetForm();
     } catch (err: unknown) {
       showToast(getErrorMessage(err), "error");
     } finally {
@@ -96,11 +130,11 @@ const BookingPage = () => {
   return (
     <motion.div className="py-16 max-w-2xl mx-auto px-4 sm:px-6 pb-28 md:pb-16">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-4xl font-bold text-navy dark:text-white mb-2">Book Pickup</h1>
+        <h1 className="text-4xl font-bold text-navy dark:text-white mb-2">Booking Pickup</h1>
         <p className="text-muted mb-2">Fill in your details and we&apos;ll handle the rest.</p>
         {user && (
           <p className="text-sm text-sky mb-6">
-            <Link to="/dashboard" className="font-medium hover:underline">Dashboard</Link>
+            <Link to="/dashboard" className="font-medium hover:underline">Laundry Update</Link>
             {" "}— view bookings, cancel, delete, and see when laundry is finished.
           </p>
         )}
@@ -132,10 +166,6 @@ const BookingPage = () => {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link to={`/track?code=${confirmed.tracking_code}`}
-                className="px-4 py-2 bg-navy text-white rounded-xl text-sm font-medium hover:bg-navy-dark">
-                Track Order
-              </Link>
               <button type="button" onClick={() => sendBookingSms(confirmed.booking_number, confirmed.tracking_code)}
                 className="px-4 py-2 bg-sky text-navy rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-sky-light">
                 <MessageSquare className="w-4 h-4" /> Send SMS
@@ -146,6 +176,13 @@ const BookingPage = () => {
                   <Bell className="w-4 h-4" /> View Notifications
                 </Link>
               )}
+              <button
+                type="button"
+                onClick={() => setConfirmed(null)}
+                className="px-4 py-2 border border-emerald-300 text-emerald-800 dark:text-emerald-200 rounded-xl text-sm font-medium"
+              >
+                Book another
+              </button>
             </div>
           </motion.div>
         )}
@@ -186,8 +223,8 @@ const BookingPage = () => {
               <label className="block text-sm font-medium mb-1.5">Pickup Time</label>
               <select value={form.pickup_time} onChange={(e) => setForm({ ...form, pickup_time: e.target.value })}
                 className="w-full px-4 py-3 rounded-xl border border-border dark:border-slate-600 bg-surface dark:bg-slate-900 focus:ring-2 focus:ring-sky outline-none">
-                {["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"].map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                {PICKUP_TIME_SLOTS.map((t) => (
+                  <option key={t} value={t}>{formatPickupTime12h(t)}</option>
                 ))}
               </select>
             </div>
@@ -195,15 +232,12 @@ const BookingPage = () => {
           <div>
             <label className="block text-sm font-medium mb-1.5">Laundry Weight (kg)</label>
             <input
-              type="number"
-              min={1}
-              max={100}
-              step={0.5}
-              value={form.weight}
+              type="text"
+              inputMode="decimal"
+              value={weightInput}
               onChange={(e) => handleWeightChange(e.target.value)}
-              onBlur={() => {
-                if (form.weight < 1) setForm((f) => ({ ...f, weight: 1 }));
-              }}
+              onBlur={handleWeightBlur}
+              placeholder="0"
               className="w-full px-4 py-3 rounded-xl border border-border dark:border-slate-600 bg-surface dark:bg-slate-900 focus:ring-2 focus:ring-sky outline-none"
             />
             {errors.weight && <p className="text-red-500 text-xs mt-1">{errors.weight}</p>}
@@ -213,10 +247,9 @@ const BookingPage = () => {
             <label className="block text-sm font-medium mb-1.5">Payment Method</label>
             <select value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })}
               className="w-full px-4 py-3 rounded-xl border border-border dark:border-slate-600 bg-surface dark:bg-slate-900 focus:ring-2 focus:ring-sky outline-none">
-              <option value="cash">Cash</option>
-              <option value="gcash">GCash</option>
-              <option value="maya">Maya</option>
-              <option value="card">Card</option>
+              {PAYMENT_METHODS.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
             </select>
           </div>
           <div>

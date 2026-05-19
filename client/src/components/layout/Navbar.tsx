@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Moon, Sun, Droplets, User, LogOut } from "lucide-react";
@@ -9,10 +9,7 @@ import LogoutConfirmModal from "../ui/LogoutConfirmModal";
 
 const links = [
   { to: "/", label: "Home" },
-  { to: "/services", label: "Services" },
-  { to: "/pricing", label: "Pricing" },
-  { to: "/booking", label: "Booking" },
-  { to: "/track", label: "Tracker" },
+  { to: "/booking", label: "Booking Pickup" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ];
@@ -34,6 +31,10 @@ const Navbar = () => {
     navigate("/");
   };
 
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-border dark:border-slate-700">
@@ -54,7 +55,7 @@ const Navbar = () => {
                 <NavLink key={l.to} to={l.to} className={navClass}>{l.label}</NavLink>
               ))}
               {user && !isAdmin && (
-                <NavLink to="/dashboard" className={navClass}>Dashboard</NavLink>
+                <NavLink to="/dashboard" className={navClass}>Laundry Update</NavLink>
               )}
             </nav>
 
@@ -88,32 +89,51 @@ const Navbar = () => {
 
         <AnimatePresence>
           {open && (
-            <motion.nav
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="lg:hidden border-t border-border dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden"
-            >
+            <>
+              <button
+                type="button"
+                className="fixed inset-0 z-30 bg-black/40 lg:hidden"
+                aria-label="Close menu"
+                onClick={() => setOpen(false)}
+              />
+              <motion.nav
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="lg:hidden relative z-40 border-t border-border dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden"
+              >
               <div className="px-4 py-4 flex flex-col gap-3">
-                {links.map((l) => (
-                  <Link key={l.to} to={l.to} onClick={() => setOpen(false)}
-                    className={`py-2 font-medium ${location.pathname === l.to ? "text-sky" : ""}`}>
-                    {l.label}
-                  </Link>
-                ))}
-                {user && !isAdmin && (
-                  <Link to="/dashboard" onClick={() => setOpen(false)} className="py-2 font-medium text-sky">
-                    Dashboard
-                  </Link>
-                )}
-                <Link to="/booking" onClick={() => setOpen(false)} className="mt-2 text-center py-3 bg-navy text-white rounded-xl font-semibold">
-                  Book Pickup
+                <Link
+                  to="/about"
+                  onClick={() => setOpen(false)}
+                  className={`py-2 font-medium ${location.pathname === "/about" ? "text-sky" : ""}`}
+                >
+                  About
                 </Link>
-                {!user && (
-                  <Link to="/login" onClick={() => setOpen(false)} className="text-center py-2 border rounded-xl">Login</Link>
+                {user ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      setLogoutOpen(true);
+                    }}
+                    className="flex items-center gap-2 py-2 font-medium text-red-500 text-left"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    Sign Out
+                  </button>
+                ) : (
+                  <Link
+                    to="/login"
+                    onClick={() => setOpen(false)}
+                    className="text-center py-2 border border-border dark:border-slate-600 rounded-xl font-medium"
+                  >
+                    Login
+                  </Link>
                 )}
               </div>
             </motion.nav>
+            </>
           )}
         </AnimatePresence>
       </header>

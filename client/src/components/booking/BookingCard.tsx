@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Scale, CheckCircle2, Trash2 } from "lucide-react";
 import type { Booking, BookingStatus } from "../../interfaces/types";
@@ -84,12 +83,6 @@ const BookingCard = ({
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <Link
-          to={`/track?code=${booking.tracking_code}`}
-          className="text-xs px-3 py-1.5 bg-sky-light dark:bg-sky/20 text-navy dark:text-sky rounded-lg font-medium"
-        >
-          Track
-        </Link>
         {showActions && (booking.can_edit ?? true) && !isFinished(booking) && booking.status !== "cancelled" && onEdit && (
           <button
             type="button"

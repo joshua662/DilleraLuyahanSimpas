@@ -13,13 +13,11 @@ export const BUSINESS = {
 
 export const BOOKING_STATUSES = [
   { key: "pending", label: "Pending", step: 0, color: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200" },
-  { key: "confirmed", label: "Confirmed", step: 1, color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200" },
-  { key: "pickup_scheduled", label: "Pickup Scheduled", step: 2, color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200" },
-  { key: "washing", label: "Washing", step: 3, color: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-200" },
-  { key: "drying", label: "Drying", step: 4, color: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200" },
-  { key: "folding", label: "Folding", step: 5, color: "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200" },
-  { key: "out_for_delivery", label: "Out for Delivery", step: 6, color: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" },
-  { key: "done", label: "Finished", step: 7, color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200" },
+  { key: "washing", label: "Washing", step: 1, color: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-200" },
+  { key: "drying", label: "Drying", step: 2, color: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200" },
+  { key: "folding", label: "Folding", step: 3, color: "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200" },
+  { key: "out_for_delivery", label: "Out for Delivery", step: 4, color: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" },
+  { key: "done", label: "Finished", step: 5, color: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200" },
 ] as const;
 
 export const TERMINAL_STATUSES = ["done", "delivered", "cancelled"];
@@ -62,11 +60,42 @@ export function getStatusStep(status: string): number {
   if (status === "done" || status === "delivered") return BOOKING_STATUSES.length;
   const found = BOOKING_STATUSES.find((s) => s.key === status);
   if (found) return found.step;
-  if (status === "picked_up") return 2;
+  if (status === "confirmed" || status === "pickup_scheduled" || status === "picked_up") return 0;
   return 0;
 }
 
+export const PICKUP_TIME_SLOTS = [
+  "08:00",
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
+  "16:00",
+  "17:00",
+  "18:00",
+] as const;
+
+export const PAYMENT_METHODS = [
+  { value: "cash", label: "Cash" },
+  { value: "gcash", label: "GCash" },
+] as const;
+
+/** Display 24h slot (e.g. "15:00") as 12-hour time with AM/PM */
+export function formatPickupTime12h(time24: string): string {
+  const [hStr, mStr = "00"] = time24.split(":");
+  let hour = parseInt(hStr, 10);
+  if (Number.isNaN(hour)) return time24;
+  const period = hour >= 12 ? "PM" : "AM";
+  if (hour === 0) hour = 12;
+  else if (hour > 12) hour -= 12;
+  return `${hour}:${mStr} ${period}`;
+}
+
 export function calculatePrice(weight: number): number {
+  if (weight <= 0) return 0;
   const baseWeight = 8;
   const basePrice = 99;
   const extraPerKg = 12;
