@@ -30,6 +30,16 @@ class LaundrySeeder extends Seeder
             'role' => 'customer',
         ]);
 
+        User::updateOrCreate(
+            ['email' => 'obaleslorenz@gmail.com'],
+            [
+                'name' => 'Lorenz Obales',
+                'phone' => null,
+                'password' => Hash::make('Lorenz'),
+                'role' => 'customer',
+            ]
+        );
+
         $services = [
             ['name' => 'Wash', 'description' => 'Professional washing with premium detergent', 'price' => 0, 'icon' => 'droplets'],
             ['name' => 'Dry', 'description' => 'Gentle tumble dry for all fabric types', 'price' => 0, 'icon' => 'wind'],

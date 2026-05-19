@@ -16,6 +16,8 @@ import AboutPage from "../pages/public/AboutPage";
 import ContactPage from "../pages/public/ContactPage";
 import LoginPage from "../pages/Auth/LoginPage";
 import RegisterPage from "../pages/Auth/RegisterPage";
+import ForgotPasswordPage from "../pages/Auth/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/Auth/ResetPasswordPage";
 import CustomerDashboard from "../pages/customer/CustomerDashboard";
 import NotificationsPage from "../pages/customer/NotificationsPage";
 import AdminDashboard from "../pages/admin/AdminDashboard";
@@ -46,6 +48,8 @@ const AppRoutes = () => (
               </Route>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route
                 path="/admin"
                 element={
