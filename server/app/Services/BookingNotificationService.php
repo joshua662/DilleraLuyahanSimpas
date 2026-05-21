@@ -19,8 +19,8 @@ class BookingNotificationService
 
     public function notifyBookingCreated(Booking $booking): void
     {
-        $title = 'Booking Confirmed';
-        $message = "Your booking {$booking->booking_number} is confirmed. Track with code: {$booking->tracking_code}";
+        $title = 'Booking Received';
+        $message = "Your booking {$booking->booking_number} has been received. We will confirm the pickup schedule soon. Track with code: {$booking->tracking_code}";
 
         $this->storeForUser($booking->user_id, $booking, $title, $message, 'booking_created');
         $this->notifyAdmins('New Booking', "New booking from {$booking->full_name} ({$booking->booking_number})", $booking);

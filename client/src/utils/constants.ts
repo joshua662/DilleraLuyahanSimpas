@@ -94,6 +94,21 @@ export function formatPickupTime12h(time24: string): string {
   return `${hour}:${mStr} ${period}`;
 }
 
+export function formatPickupSchedule(date?: string | null, time?: string | null): string {
+  if (!date && !time) return "Not scheduled";
+
+  const formattedDate = date
+    ? new Date(date).toLocaleDateString("en-PH", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "Date pending";
+
+  return time ? `${formattedDate} at ${formatPickupTime12h(time)}` : formattedDate;
+}
+
 export function calculatePrice(weight: number): number {
   if (weight <= 0) return 0;
   const baseWeight = 8;
@@ -109,8 +124,12 @@ export function buildSmsLink(phone: string, message?: string): string {
   return message ? `${base}?body=${encodeURIComponent(message)}` : base;
 }
 
-export function getEstimatedCompletion(pickupDate: string): string {
+export function getEstimatedCompletion(pickupDate?: string | null): string {
+  if (!pickupDate) return "To be scheduled";
+
   const d = new Date(pickupDate);
+  if (Number.isNaN(d.getTime())) return "To be scheduled";
+
   d.setDate(d.getDate() + 2);
   return d.toLocaleDateString("en-PH", { weekday: "short", month: "short", day: "numeric" });
 }

@@ -8,7 +8,7 @@ import type { Booking } from "../../interfaces/types";
 import StatusTimeline from "../../components/booking/StatusTimeline";
 import StatusBadge from "../../components/booking/StatusBadge";
 import { useToast } from "../../contexts/ToastContext";
-import { getEstimatedCompletion } from "../../utils/constants";
+import { formatPickupSchedule, getEstimatedCompletion } from "../../utils/constants";
 
 const TrackPage = () => {
   const [params] = useSearchParams();
@@ -106,7 +106,7 @@ const TrackPage = () => {
           <div className="mt-6 pt-6 border-t border-border dark:border-slate-700 grid grid-cols-2 gap-4 text-sm">
             <div><p className="text-muted">Customer</p><p className="font-medium">{booking.full_name}</p></div>
             <div><p className="text-muted">Total</p><p className="font-medium">₱{booking.total_price}</p></div>
-            <div><p className="text-muted">Pickup</p><p className="font-medium">{booking.pickup_date} @ {booking.pickup_time}</p></div>
+            <div><p className="text-muted">Pickup</p><p className="font-medium">{formatPickupSchedule(booking.pickup_date, booking.pickup_time)}</p></div>
             <div><p className="text-muted">Weight</p><p className="font-medium">{booking.weight} kg</p></div>
             {booking.delivery_rider && (
               <div className="col-span-2"><p className="text-muted">Rider</p><p className="font-medium">{booking.delivery_rider}</p></div>

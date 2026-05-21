@@ -45,6 +45,7 @@ enum BookingStatus: string
             self::Pending,
             self::Confirmed,
             self::PickupScheduled,
+            self::PickedUp,
             self::Washing,
             self::Drying,
             self::Folding,
@@ -74,7 +75,7 @@ enum BookingStatus: string
     {
         return match ($this) {
             self::Pending => 'Your laundry booking has been received and is pending confirmation.',
-            self::Confirmed => 'Your laundry booking is confirmed. We will pick up on your scheduled date.',
+            self::Confirmed => 'Your laundry booking is confirmed. We will send your pickup schedule soon.',
             self::PickupScheduled => 'Pickup has been scheduled for your laundry order.',
             self::PickedUp => 'Your laundry has been picked up and is on the way to our shop.',
             self::Washing => 'Your laundry is now washing.',

@@ -35,11 +35,11 @@ class BookingController extends Controller
         $booking = $this->bookingService->createBooking($data, $userId);
 
         return response()->json([
-            'message' => 'Booking created successfully!',
+            'message' => 'Booking request created successfully!',
             'booking' => new BookingResource($booking),
             'notification' => [
                 'sent' => true,
-                'message' => "Confirmation sent. Track your order with code: {$booking->tracking_code}",
+                'message' => "Booking received. Track your order with code: {$booking->tracking_code}",
             ],
         ], 201);
     }

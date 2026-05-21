@@ -20,7 +20,7 @@ const BackButton: FC<BackButtonProps> = ({
                 to={path}
                 className={`${newClassName
                     ? newClassName
-                    : `px-4 py-3 bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-700 text-sm font-medium cursor-pointer
+                    : `px-4 py-3 bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-700 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 dark:hover:text-slate-100 text-sm font-medium cursor-pointer
                     rounded-lg shadow-lg ${className}`
                     }`}
             >

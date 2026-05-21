@@ -26,7 +26,7 @@ const StatusTimeline = ({
 }: Props) => {
   const currentStep = getStatusStep(status);
   const cancelled = status === "cancelled";
-  const finished = status === "done" || isDone;
+  const finished = status === "done" || status === "delivered" || isDone;
 
   if (cancelled) {
     return (

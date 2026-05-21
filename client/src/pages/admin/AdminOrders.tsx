@@ -3,7 +3,7 @@ import { Search, FileDown, Eye, CheckCircle, XCircle } from "lucide-react";
 import { jsPDF } from "jspdf";
 import AdminService from "../../services/AdminService";
 import type { Booking } from "../../interfaces/types";
-import { STATUS_LABELS } from "../../utils/constants";
+import { formatPickupSchedule, STATUS_LABELS } from "../../utils/constants";
 import { useToast } from "../../contexts/ToastContext";
 import Skeleton from "../../components/ui/Skeleton";
 import StatusBadge from "../../components/booking/StatusBadge";
@@ -51,8 +51,9 @@ const AdminOrders = () => {
     doc.text(`Customer: ${b.full_name}`, 20, 45);
     doc.text(`Phone: ${b.phone}`, 20, 55);
     doc.text(`Status: ${STATUS_LABELS[b.status]}`, 20, 65);
-    doc.text(`Total: PHP ${b.total_price}`, 20, 75);
-    doc.text(`Tracking: ${b.tracking_code}`, 20, 85);
+    doc.text(`Pickup: ${formatPickupSchedule(b.pickup_date, b.pickup_time)}`, 20, 75);
+    doc.text(`Total: PHP ${b.total_price}`, 20, 85);
+    doc.text(`Tracking: ${b.tracking_code}`, 20, 95);
     doc.save(`${b.booking_number}.pdf`);
     showToast("PDF downloaded");
   };
@@ -144,6 +145,7 @@ const AdminOrders = () => {
               key={b.id}
               booking={b}
               showActions
+              onEdit={!isLocked(b) ? () => openModal(b) : undefined}
               onCancel={!isLocked(b) ? () => void handleCancel(b) : undefined}
               onStatusSelect={!isLocked(b) ? (s) => void handleStatusSelect(b, s) : undefined}
               statusUpdating={statusUpdatingId === b.id}
@@ -168,7 +170,7 @@ const AdminOrders = () => {
                 <tr key={b.id} className="border-t border-border dark:border-slate-700 hover:bg-slate-50/50 dark:hover:bg-slate-700/30">
                   <td className="px-4 py-3 font-mono text-xs">{b.booking_number}<br /><span className="text-muted">{b.tracking_code}</span></td>
                   <td className="px-4 py-3">{b.full_name}<br /><span className="text-muted text-xs">{b.phone}</span></td>
-                  <td className="px-4 py-3">{b.pickup_date}<br /><span className="text-muted text-xs">{b.pickup_time}</span></td>
+                  <td className="px-4 py-3">{formatPickupSchedule(b.pickup_date, b.pickup_time)}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={b.status} done={b.is_done} />
                   </td>

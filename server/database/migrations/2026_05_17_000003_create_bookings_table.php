@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('phone', 20);
             $table->string('email')->nullable();
             $table->text('address');
-            $table->date('pickup_date');
-            $table->string('pickup_time', 10);
+            $table->date('pickup_date')->nullable();
+            $table->string('pickup_time', 10)->nullable();
             $table->decimal('weight', 8, 2)->default(8);
             $table->text('notes')->nullable();
             $table->string('status')->default('pending');

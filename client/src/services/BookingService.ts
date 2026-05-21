@@ -6,8 +6,8 @@ export interface CreateBookingPayload {
   phone: string;
   email?: string;
   address: string;
-  pickup_date: string;
-  pickup_time: string;
+  pickup_date?: string | null;
+  pickup_time?: string | null;
   weight: number;
   notes?: string;
   payment_method?: string;

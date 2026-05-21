@@ -11,6 +11,8 @@
   --color-surface-card: #ffffff;
   --color-muted: #64748b;
   --color-border: #e2e8f0;
+  --color-green: #22c55e;
+  --color-green-dark: #16a34a;
 }
 
 @layer base {
@@ -23,6 +25,11 @@
   .dark body {
     @apply bg-slate-900 text-slate-100;
   }
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(57%) sepia(74%) saturate(558%) hue-rotate(93deg) brightness(94%) contrast(88%);
+    opacity: 1;
+  }
 }
 
 @layer utilities {
@@ -34,5 +41,11 @@
   }
   .gradient-hero {
     background: linear-gradient(135deg, #0c2d6b 0%, #1e5a9e 50%, #38bdf8 100%);
+  }
+  .btn-primary {
+    @apply bg-green-600 hover:bg-green-700 text-white font-medium;
+  }
+  .dark .btn-primary {
+    @apply bg-green-500 hover:bg-green-600 text-white;
   }
 }

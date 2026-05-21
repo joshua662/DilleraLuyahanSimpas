@@ -6,7 +6,7 @@ import StatusBadge from "./StatusBadge";
 import StatusTimeline from "./StatusTimeline";
 import AdminService from "../../services/AdminService";
 import { useToast } from "../../contexts/ToastContext";
-import { STATUS_LABELS } from "../../utils/constants";
+import { formatPickupSchedule, formatPickupTime12h, PICKUP_TIME_SLOTS, STATUS_LABELS } from "../../utils/constants";
 
 interface Props {
   booking: Booking | null;
@@ -18,11 +18,21 @@ interface Props {
 const BookingModal = ({ booking, open, onClose, onUpdated }: Props) => {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
   const [displayStatus, setDisplayStatus] = useState<BookingStatus>("pending");
+  const [pickupDate, setPickupDate] = useState("");
+  const [pickupTime, setPickupTime] = useState("");
 
   useEffect(() => {
-    if (!open) setLoading(false);
-    if (booking) setDisplayStatus(booking.status);
+    if (!open) {
+      setLoading(false);
+      setScheduleLoading(false);
+    }
+    if (booking) {
+      setDisplayStatus(booking.status);
+      setPickupDate(booking.pickup_date || "");
+      setPickupTime(booking.pickup_time || "");
+    }
   }, [open, booking]);
 
   if (!booking) return null;
@@ -74,6 +84,30 @@ const BookingModal = ({ booking, open, onClose, onUpdated }: Props) => {
     }
   };
 
+  const handleScheduleSave = async () => {
+    if (!pickupDate || !pickupTime) {
+      showToast("Select pickup date and time first", "error");
+      return;
+    }
+
+    setScheduleLoading(true);
+    try {
+      const res = await AdminService.updateBooking(booking.id, {
+        pickup_date: pickupDate,
+        pickup_time: pickupTime,
+      });
+      setDisplayStatus(res.data.booking.status);
+      setPickupDate(res.data.booking.pickup_date || pickupDate);
+      setPickupTime(res.data.booking.pickup_time || pickupTime);
+      showToast("Pickup schedule saved - customer notified");
+      onUpdated();
+    } catch {
+      showToast("Failed to save pickup schedule", "error");
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {open && (
@@ -117,9 +151,44 @@ const BookingModal = ({ booking, open, onClose, onUpdated }: Props) => {
               <div className="text-sm space-y-1 text-muted">
                 <p><strong>Phone:</strong> {booking.phone}</p>
                 <p><strong>Address:</strong> {booking.address}</p>
-                <p><strong>Pickup:</strong> {booking.pickup_date} at {booking.pickup_time}</p>
+                <p><strong>Pickup:</strong> {formatPickupSchedule(pickupDate || booking.pickup_date, pickupTime || booking.pickup_time)}</p>
                 <p><strong>Tracking:</strong> {booking.tracking_code}</p>
               </div>
+
+              {!isLocked && (
+                <div className="rounded-xl border border-border dark:border-slate-700 p-4 space-y-3">
+                  <p className="font-semibold text-sm text-navy dark:text-white">Pickup Schedule</p>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <input
+                      type="date"
+                      value={pickupDate}
+                      min={new Date().toISOString().split("T")[0]}
+                      onChange={(e) => setPickupDate(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-border dark:border-slate-600 bg-surface dark:bg-slate-900 focus:ring-2 focus:ring-sky outline-none"
+                    />
+                    <select
+                      value={pickupTime}
+                      onChange={(e) => setPickupTime(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-border dark:border-slate-600 bg-surface dark:bg-slate-900 focus:ring-2 focus:ring-sky outline-none"
+                    >
+                      <option value="">Select time</option>
+                      {PICKUP_TIME_SLOTS.map((t) => (
+                        <option key={t} value={t}>
+                          {formatPickupTime12h(t)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleScheduleSave()}
+                    disabled={scheduleLoading}
+                    className="w-full py-2.5 bg-navy text-white rounded-xl font-semibold hover:bg-navy-dark disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {scheduleLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : "Save Pickup Schedule"}
+                  </button>
+                </div>
+              )}
 
               {!isLocked && (
                 <div className="grid grid-cols-2 gap-3 pt-4 border-t border-border dark:border-slate-700">

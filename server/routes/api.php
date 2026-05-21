@@ -18,7 +18,6 @@ Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
 
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/testimonials', [TestimonialController::class, 'index']);
-Route::post('/bookings', [BookingController::class, 'store']);
 Route::post('/bookings/track', [BookingController::class, 'track']);
 
 // Authenticated routes
@@ -27,6 +26,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     // Customer booking management
+    Route::post('/bookings', [BookingController::class, 'store']);
     Route::get('/my-orders', [BookingController::class, 'myOrders']);
     Route::get('/bookings/{id}', [BookingController::class, 'show']);
     Route::put('/bookings/{id}', [BookingController::class, 'update']);

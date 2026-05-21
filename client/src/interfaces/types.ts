@@ -15,8 +15,8 @@ export interface Booking {
   full_name: string;
   phone: string;
   address: string;
-  pickup_date: string;
-  pickup_time: string;
+  pickup_date?: string | null;
+  pickup_time?: string | null;
   weight: number;
   notes?: string;
   status: BookingStatus;

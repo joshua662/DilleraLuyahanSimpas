@@ -28,8 +28,8 @@ class BookingService
             'phone' => $data['phone'],
             'email' => $data['email'] ?? null,
             'address' => $data['address'],
-            'pickup_date' => $data['pickup_date'],
-            'pickup_time' => $data['pickup_time'],
+            'pickup_date' => $data['pickup_date'] ?? null,
+            'pickup_time' => $data['pickup_time'] ?? null,
             'weight' => $weight,
             'notes' => $data['notes'] ?? null,
             'status' => BookingStatus::Pending->value,
@@ -61,12 +61,15 @@ class BookingService
         }
 
         $weight = (float) ($data['weight'] ?? $booking->weight);
+        $previousStatus = $booking->status;
+        $previousPickupDate = $booking->pickup_date?->format('Y-m-d');
+        $previousPickupTime = $booking->pickup_time;
         $updates = [
             'full_name' => $data['full_name'] ?? $booking->full_name,
             'phone' => $data['phone'] ?? $booking->phone,
             'address' => $data['address'] ?? $booking->address,
-            'pickup_date' => $data['pickup_date'] ?? $booking->pickup_date,
-            'pickup_time' => $data['pickup_time'] ?? $booking->pickup_time,
+            'pickup_date' => array_key_exists('pickup_date', $data) ? $data['pickup_date'] : $booking->pickup_date,
+            'pickup_time' => array_key_exists('pickup_time', $data) ? $data['pickup_time'] : $booking->pickup_time,
             'weight' => $weight,
             'notes' => $data['notes'] ?? $booking->notes,
             'payment_method' => $data['payment_method'] ?? $booking->payment_method,
@@ -75,7 +78,31 @@ class BookingService
             'total_price' => Booking::calculatePrice($weight),
         ];
 
-        return $this->repository->update($booking, $updates);
+        $scheduleChanged =
+            ($previousPickupDate !== ($updates['pickup_date'] instanceof \DateTimeInterface ? $updates['pickup_date']->format('Y-m-d') : $updates['pickup_date'])) ||
+            ($previousPickupTime !== $updates['pickup_time']);
+
+        if (
+            $scheduleChanged &&
+            $updates['pickup_date'] &&
+            $updates['pickup_time'] &&
+            in_array($previousStatus, [BookingStatus::Pending->value, BookingStatus::Confirmed->value], true)
+        ) {
+            $updates['status'] = BookingStatus::PickupScheduled->value;
+        }
+
+        $updated = $this->repository->update($booking, $updates);
+
+        if ($scheduleChanged && $updated->pickup_date && $updated->pickup_time) {
+            $date = $updated->pickup_date->format('Y-m-d');
+            event(new BookingStatusChanged(
+                $updated,
+                $previousStatus,
+                "Pickup scheduled for {$date} at {$updated->pickup_time}."
+            ));
+        }
+
+        return $updated;
     }
 
     public function updateStatus(Booking $booking, string $status, ?string $deliveryRider = null): Booking
