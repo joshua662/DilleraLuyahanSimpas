@@ -28,7 +28,7 @@ const CustomerDashboard = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [trash, setTrash] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"bookings" | "trash">("bookings");
+  const [tab, setTab] = useState<"bookings" | "previous" | "trash">("bookings");
   const [editing, setEditing] = useState<Booking | null>(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState<number | null>(null);
   const prevStatuses = useRef<Record<number, string>>({});
@@ -186,6 +186,7 @@ const CustomerDashboard = () => {
   );
   const completed = bookings.filter((b) => b.is_finished || b.is_done || b.status === "done");
   const cancelled = bookings.filter((b) => b.status === "cancelled");
+  const previousCount = completed.length + cancelled.length;
 
   return (
     <motion.div className="py-12 max-w-4xl mx-auto px-4 sm:px-6 pb-28 md:pb-12">
@@ -201,7 +202,7 @@ const CustomerDashboard = () => {
         </Link>
       </motion.div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         <button
           type="button"
           onClick={() => setTab("bookings")}
@@ -211,8 +212,18 @@ const CustomerDashboard = () => {
         </button>
         <button
           type="button"
+          onClick={() => setTab("previous")}
+          className={`px-4 py-2 rounded-xl text-sm font-medium ${tab === "previous" ? "bg-navy text-white" : "bg-white dark:bg-slate-800 border border-border dark:border-slate-700"}`}
+        >
+          Previous Booking
+          {previousCount > 0 && (
+            <span className="ml-2 text-xs bg-sky text-navy px-1.5 py-0.5 rounded-full">{previousCount}</span>
+          )}
+        </button>
+        <button
+          type="button"
           onClick={() => setTab("trash")}
-          className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${tab === "trash" ? "bg-navy text-white" : "bg-white dark:bg-slate-800 border border-border dark:border-slate-700"}`}
+          className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 ${tab === "trash" ? "bg-red-600 text-white" : "bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-300"}`}
         >
           <Trash2 className="w-4 h-4" /> Trash
           {trash.length > 0 && (
@@ -243,6 +254,16 @@ const CustomerDashboard = () => {
               </div>
             </section>
           )}
+          {active.length === 0 && (
+            <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl card-shadow">
+              <Package className="w-12 h-12 text-muted mx-auto mb-4" />
+              <p className="text-muted mb-4">No active bookings right now</p>
+              <Link to="/booking" className="text-sky font-medium">Create a new booking -&gt;</Link>
+            </div>
+          )}
+        </div>
+      ) : tab === "previous" ? (
+        <div className="space-y-6">
           {completed.length > 0 && (
             <section>
               <h2 className="text-lg font-bold mb-3">Finished</h2>
@@ -269,11 +290,10 @@ const CustomerDashboard = () => {
               </div>
             </section>
           )}
-          {bookings.length === 0 && (
+          {previousCount === 0 && (
             <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl card-shadow">
               <Package className="w-12 h-12 text-muted mx-auto mb-4" />
-              <p className="text-muted mb-4">No bookings yet</p>
-              <Link to="/booking" className="text-sky font-medium">Create your first booking →</Link>
+              <p className="text-muted">No previous bookings yet</p>
             </div>
           )}
         </div>

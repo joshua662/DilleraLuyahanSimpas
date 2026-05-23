@@ -1,13 +1,18 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Droplets, Loader2, LogIn } from "lucide-react";
+import { Droplets, Home, Loader2, LogIn } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
 import PasswordInput from "../../components/ui/PasswordInput";
 import { getApiErrorMessage, isEmailAlreadyRegistered } from "../../utils/apiError";
 
+const getSafeRedirectPath = (value?: string) =>
+  value?.startsWith("/") && !value.startsWith("//") ? value : undefined;
+
 const RegisterPage = () => {
+  const location = useLocation();
+  const redirectTo = getSafeRedirectPath((location.state as { from?: string } | null)?.from);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -42,7 +47,7 @@ const RegisterPage = () => {
         name: form.name.trim(),
       });
       showToast("Account created successfully!");
-      navigate("/dashboard", { replace: true });
+      navigate(redirectTo ?? "/dashboard", { replace: true });
     } catch (err) {
       if (isEmailAlreadyRegistered(err)) {
         setAccountExists(true);
@@ -62,6 +67,13 @@ const RegisterPage = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl p-8 card-shadow border border-border dark:border-slate-700"
       >
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 mb-6 px-3 py-2 text-sm font-semibold text-navy dark:text-sky border border-border dark:border-slate-600 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900"
+        >
+          <Home className="w-4 h-4" /> Home
+        </Link>
+
         <div className="text-center mb-8">
           <div className="w-14 h-14 mx-auto mb-4 rounded-2xl gradient-hero flex items-center justify-center">
             <Droplets className="w-7 h-7 text-white" />
@@ -77,7 +89,7 @@ const RegisterPage = () => {
             </p>
             <Link
               to="/login"
-              state={{ email: form.email.trim() }}
+              state={{ email: form.email.trim(), ...(redirectTo ? { from: redirectTo } : {}) }}
               className="flex items-center justify-center gap-2 w-full py-2.5 bg-navy text-white rounded-xl text-sm font-semibold hover:bg-navy-dark"
             >
               <LogIn className="w-4 h-4" /> Go to Sign In
@@ -137,7 +149,10 @@ const RegisterPage = () => {
           Already have an account?{" "}
           <Link
             to="/login"
-            state={form.email ? { email: form.email.trim() } : undefined}
+            state={{
+              ...(form.email ? { email: form.email.trim() } : {}),
+              ...(redirectTo ? { from: redirectTo } : {}),
+            }}
             className="text-sky font-medium hover:underline"
           >
             Sign In

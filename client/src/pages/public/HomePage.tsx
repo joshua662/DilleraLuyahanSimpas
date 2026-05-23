@@ -1,9 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, MessageSquare, Phone, Sparkles, Truck, Shield } from "lucide-react";
+import { ArrowRight, Sparkles, Truck, Shield } from "lucide-react";
 import BubbleBackground from "../../components/ui/BubbleBackground";
-import { BUSINESS } from "../../utils/constants";
-import { sendSmsToShop } from "../../utils/sms";
 
 const features = [
   { icon: Truck, title: "Free Pickup", desc: "We collect from your doorstep" },
@@ -31,13 +29,6 @@ const HomePage = () => (
             <Link to="/booking" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-navy font-semibold rounded-xl hover:bg-sky-light transition">
               Book Pickup <ArrowRight className="w-5 h-5" />
             </Link>
-            <a href={BUSINESS.phoneLink} className="inline-flex items-center gap-2 px-6 py-3 border border-white/40 rounded-xl hover:bg-white/10 transition">
-              <Phone className="w-5 h-5" /> Contact Now
-            </a>
-            <button type="button" onClick={() => sendSmsToShop()}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-sky text-navy font-semibold rounded-xl hover:bg-sky-light transition">
-              <MessageSquare className="w-5 h-5" /> Send SMS
-            </button>
           </div>
         </motion.div>
       </div>

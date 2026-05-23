@@ -9,7 +9,7 @@ import LogoutConfirmModal from "../ui/LogoutConfirmModal";
 
 const links = [
   { to: "/", label: "Home" },
-  { to: "/booking", label: "Booking Pickup" },
+  { to: "/booking", label: "Booking Laundry" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ];

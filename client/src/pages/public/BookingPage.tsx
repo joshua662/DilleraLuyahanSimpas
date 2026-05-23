@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Calendar, Loader2, MessageSquare, Bell, CheckCircle } from "lucide-react";
+import { Calendar, Loader2, MessageSquare, Bell, CheckCircle, LogIn, UserPlus } from "lucide-react";
 import BookingService from "../../services/BookingService";
 import AddressAutocomplete from "../../components/booking/AddressAutocomplete";
 import { useToast } from "../../contexts/ToastContext";
@@ -31,10 +31,10 @@ type BookingForm = {
   longitude: number | undefined;
 };
 
-const createInitialForm = (user: User | null): BookingForm => ({
-  full_name: user?.name || "",
-  phone: user?.phone || "",
-  email: user?.email || "",
+const createInitialForm = (user: User | null, prefillAccount = true): BookingForm => ({
+  full_name: prefillAccount ? user?.name || "" : "",
+  phone: prefillAccount ? user?.phone || "" : "",
+  email: prefillAccount ? user?.email || "" : "",
   address: "",
   pickup_date: "",
   pickup_time: "10:00",
@@ -46,7 +46,7 @@ const createInitialForm = (user: User | null): BookingForm => ({
 });
 
 const BookingPage = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { showToast } = useToast();
   const { refresh: refreshNotifications } = useNotifications();
   const [loading, setLoading] = useState(false);
@@ -55,14 +55,14 @@ const BookingPage = () => {
   const [weightInput, setWeightInput] = useState("0");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const resetForm = useCallback(() => {
-    setForm(createInitialForm(user));
+  const resetForm = useCallback((prefillAccount = true) => {
+    setForm(createInitialForm(user, prefillAccount));
     setWeightInput("0");
     setErrors({});
   }, [user]);
 
   useEffect(() => {
-    resetForm();
+    resetForm(true);
   }, [user, resetForm]);
 
   const handleWeightChange = (raw: string) => {
@@ -119,7 +119,7 @@ const BookingPage = () => {
       if (user) {
         await refreshNotifications();
       }
-      resetForm();
+      resetForm(false);
     } catch (err: unknown) {
       showToast(getErrorMessage(err), "error");
     } finally {
@@ -127,10 +127,55 @@ const BookingPage = () => {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="py-24 flex justify-center">
+        <div className="w-10 h-10 border-4 border-sky border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <motion.div className="py-16 max-w-2xl mx-auto px-4 sm:px-6 pb-28 md:pb-16">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <h1 className="text-4xl font-bold text-navy dark:text-white mb-2">Booking Laundry</h1>
+          <p className="text-muted mb-6">Please sign in first so your booking can be saved to your account.</p>
+
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 sm:p-8 card-shadow border border-border dark:border-slate-700 text-center">
+            <div className="w-14 h-14 mx-auto mb-5 rounded-2xl gradient-hero flex items-center justify-center">
+              <Calendar className="w-7 h-7 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-navy dark:text-white mb-2">Login Required</h2>
+            <p className="text-muted mb-6">
+              To book laundry pickup, login with your account. If you do not have one yet, create a new account.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <Link
+                to="/login"
+                state={{ from: "/booking" }}
+                className="w-full py-3 px-4 bg-sky text-navy font-semibold rounded-xl hover:bg-sky-light flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-5 h-5" /> Login
+              </Link>
+              <Link
+                to="/register"
+                state={{ from: "/booking" }}
+                className="w-full py-3 px-4 bg-navy text-white font-semibold rounded-xl hover:bg-navy-dark flex items-center justify-center gap-2"
+              >
+                <UserPlus className="w-5 h-5" /> Create Account
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div className="py-16 max-w-2xl mx-auto px-4 sm:px-6 pb-28 md:pb-16">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-4xl font-bold text-navy dark:text-white mb-2">Booking Pickup</h1>
+        <h1 className="text-4xl font-bold text-navy dark:text-white mb-2">Booking Laundry</h1>
         <p className="text-muted mb-2">Fill in your details and we&apos;ll handle the rest.</p>
         {user && (
           <p className="text-sm text-sky mb-6">
