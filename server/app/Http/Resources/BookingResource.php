@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,9 +18,10 @@ class BookingResource extends JsonResource
             'full_name' => $this->full_name,
             'phone' => $this->phone,
             'email' => $this->email,
+            'customer_type' => $this->customer_type ?? 'walk_in',
             'address' => $this->address,
             'pickup_date' => $this->pickup_date?->format('Y-m-d'),
-            'pickup_time' => $this->pickup_time,
+            'pickup_time' => Booking::normalizePickupTime($this->pickup_time),
             'weight' => (float) $this->weight,
             'notes' => $this->notes,
             'status' => $this->status,

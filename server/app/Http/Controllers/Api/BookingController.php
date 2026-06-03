@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdminStoreBookingRequest;
 use App\Http\Requests\StoreBookingRequest;
+use App\Models\User;
 use App\Http\Requests\UpdateBookingRequest;
 use App\Http\Requests\UpdateBookingStatusRequest;
 use App\Http\Resources\BookingResource;
@@ -85,7 +87,11 @@ class BookingController extends Controller
         }
 
         try {
-            $updated = $this->bookingService->updateBooking($booking, $request->validated());
+            $updated = $this->bookingService->updateBooking(
+                $booking,
+                $request->validated(),
+                $request->user()->isAdmin()
+            );
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
@@ -115,6 +121,30 @@ class BookingController extends Controller
         ]);
     }
 
+    public function adminStore(AdminStoreBookingRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $userId = $data['user_id'] ?? null;
+
+        if ($userId) {
+            $customer = User::where('role', 'customer')->find($userId);
+            if (! $customer) {
+                return response()->json(['message' => 'Customer not found.'], 422);
+            }
+            if (empty($data['email'])) {
+                $data['email'] = $customer->email;
+            }
+        }
+
+        unset($data['user_id']);
+        $booking = $this->bookingService->createBooking($data, $userId);
+
+        return response()->json([
+            'message' => 'Booking created successfully.',
+            'booking' => new BookingResource($booking),
+        ], 201);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $bookings = $this->bookingRepository->all([
@@ -123,6 +153,10 @@ class BookingController extends Controller
             'per_page' => $request->per_page ?? 15,
             'is_done' => $request->has('is_done') ? filter_var($request->is_done, FILTER_VALIDATE_BOOLEAN) : null,
         ]);
+
+        $bookings->getCollection()->transform(
+            fn (Booking $booking) => (new BookingResource($booking))->resolve($request)
+        );
 
         return response()->json($bookings);
     }

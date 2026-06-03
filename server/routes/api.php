@@ -48,9 +48,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('admin')->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard']);
         Route::get('/customers', [AdminController::class, 'customers']);
+        Route::post('/customers', [AdminController::class, 'storeCustomer']);
+        Route::put('/customers/{customer}', [AdminController::class, 'updateCustomer']);
+        Route::delete('/customers/{customer}', [AdminController::class, 'destroyCustomer']);
         Route::get('/reports', [AdminController::class, 'reports']);
 
         Route::get('/bookings', [BookingController::class, 'index']);
+        Route::post('/bookings', [BookingController::class, 'adminStore']);
         Route::get('/bookings/{id}', [BookingController::class, 'adminShow']);
         Route::patch('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
         Route::patch('/bookings/{id}/done', [BookingController::class, 'markDone']);

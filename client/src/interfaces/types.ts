@@ -14,6 +14,8 @@ export interface Booking {
   booking_reference?: string;
   full_name: string;
   phone: string;
+  email?: string;
+  customer_type?: "walk_in" | "pick_up";
   address: string;
   pickup_date?: string | null;
   pickup_time?: string | null;
@@ -88,7 +90,10 @@ export interface Testimonial {
 export interface DashboardStats {
   total_orders: number;
   daily_revenue: number;
+  daily_payments_total: number;
+  daily_payments_count: number;
   total_revenue: number;
+  monthly_payment_total: number;
   pending_orders: number;
   delivered_orders: number;
   total_customers: number;

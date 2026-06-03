@@ -19,6 +19,7 @@ class Booking extends Model
         'full_name',
         'phone',
         'email',
+        'customer_type',
         'address',
         'pickup_date',
         'pickup_time',
@@ -76,6 +77,19 @@ class Booking extends Model
         return ! $this->isFinished() && $this->status !== BookingStatus::Cancelled->value;
     }
 
+    public static function normalizePickupTime(?string $time): ?string
+    {
+        if ($time === null || $time === '') {
+            return null;
+        }
+
+        if (preg_match('/^(\d{1,2}):(\d{2})/', trim($time), $matches)) {
+            return sprintf('%02d:%02d', (int) $matches[1], (int) $matches[2]);
+        }
+
+        return $time;
+    }
+
     public function canCancel(): bool
     {
         return ! $this->isFinished() && $this->status !== BookingStatus::Cancelled->value;
@@ -90,7 +104,7 @@ class Booking extends Model
     {
         do {
             $code = strtoupper(substr(bin2hex(random_bytes(4)), 0, 8));
-        } while (self::where('tracking_code', $code)->exists());
+        } while (self::withTrashed()->where('tracking_code', $code)->exists());
 
         return $code;
     }
@@ -99,13 +113,20 @@ class Booking extends Model
     {
         $year = date('Y');
         $prefix = "MDV-{$year}-";
-        $last = self::where('booking_number', 'like', $prefix.'%')
-            ->orderByDesc('id')
-            ->value('booking_number');
 
-        $seq = $last ? ((int) substr($last, -4)) + 1 : 1;
+        // Include soft-deleted rows — booking_number stays unique in the database
+        $maxSeq = self::withTrashed()
+            ->where('booking_number', 'like', $prefix.'%')
+            ->pluck('booking_number')
+            ->map(fn (?string $number) => $number ? (int) substr($number, -4) : 0)
+            ->max() ?? 0;
 
-        return $prefix.str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+        do {
+            $maxSeq++;
+            $candidate = $prefix.str_pad((string) $maxSeq, 4, '0', STR_PAD_LEFT);
+        } while (self::withTrashed()->where('booking_number', $candidate)->exists());
+
+        return $candidate;
     }
 
     public function canDelete(): bool

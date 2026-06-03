@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard, Package, Users, CreditCard, Tag, BarChart3,
+  LayoutDashboard, Package, CreditCard, BarChart3,
   LogOut, Menu, X, Droplets, Moon, Sun,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -10,9 +10,7 @@ import { useTheme } from "../contexts/ThemeContext";
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true },
   { to: "/admin/orders", icon: Package, label: "Orders" },
-  { to: "/admin/customers", icon: Users, label: "Customers" },
   { to: "/admin/payments", icon: CreditCard, label: "Payments" },
-  { to: "/admin/pricing", icon: Tag, label: "Pricing" },
   { to: "/admin/reports", icon: BarChart3, label: "Reports" },
 ];
 
@@ -62,12 +60,13 @@ const AdminLayout = () => {
         <header className="h-16 bg-white dark:bg-slate-800 border-b border-border dark:border-slate-700 flex items-center justify-between px-4 sm:px-6">
           <button className="lg:hidden p-2" onClick={() => setSidebarOpen(true)}><Menu className="w-6 h-6" /></button>
           <h1 className="font-semibold text-navy dark:text-white hidden sm:block">Admin Dashboard</h1>
-          <div className="flex items-center gap-2 ml-auto">
-            <button onClick={toggle} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-              {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-            <Link to="/" className="text-sm text-sky hover:underline">View Site</Link>
-          </div>
+          <button
+            onClick={toggle}
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 ml-auto"
+            aria-label="Toggle theme"
+          >
+            {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
         </header>
         <main className="flex-1 p-4 sm:p-6 overflow-auto">
           <Outlet />

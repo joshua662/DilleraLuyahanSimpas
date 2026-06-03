@@ -68,10 +68,10 @@ const RegisterPage = () => {
         className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl p-8 card-shadow border border-border dark:border-slate-700"
       >
         <Link
-          to="/"
+          to="/booking"
           className="inline-flex items-center gap-2 mb-6 px-3 py-2 text-sm font-semibold text-navy dark:text-sky border border-border dark:border-slate-600 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900"
         >
-          <Home className="w-4 h-4" /> Home
+          <Home className="w-4 h-4" /> Booking
         </Link>
 
         <div className="text-center mb-8">

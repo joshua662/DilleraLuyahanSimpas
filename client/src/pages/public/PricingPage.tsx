@@ -53,8 +53,8 @@ const PricingPage = () => (
               </li>
             ))}
           </ul>
-          <Link to="/booking" className={`block text-center py-3 rounded-xl font-semibold transition ${plan.popular ? "bg-navy text-white hover:bg-navy-dark" : "border border-navy text-navy dark:text-sky dark:border-sky hover:bg-sky-light dark:hover:bg-sky/10"}`}>
-            Book Now
+          <Link to="/contact" className={`block text-center py-3 rounded-xl font-semibold transition ${plan.popular ? "bg-navy text-white hover:bg-navy-dark" : "border border-navy text-navy dark:text-sky dark:border-sky hover:bg-sky-light dark:hover:bg-sky/10"}`}>
+            Contact Us
           </Link>
         </motion.div>
       ))}

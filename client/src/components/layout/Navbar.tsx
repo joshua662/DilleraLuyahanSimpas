@@ -1,16 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Moon, Sun, Droplets, User, LogOut } from "lucide-react";
+import { Menu, X, Moon, Sun, Droplets, Shield, LogOut } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useAuth } from "../../contexts/AuthContext";
-import NotificationBell from "../notifications/NotificationBell";
 import LogoutConfirmModal from "../ui/LogoutConfirmModal";
 
 const links = [
-  { to: "/", label: "Home" },
-  { to: "/booking", label: "Booking Laundry" },
-  { to: "/about", label: "About" },
+  { to: "/track", label: "Track Order" },
   { to: "/contact", label: "Contact" },
 ];
 
@@ -28,7 +25,7 @@ const Navbar = () => {
   const handleLogout = async () => {
     await logout();
     setLogoutOpen(false);
-    navigate("/");
+    navigate("/login");
   };
 
   useEffect(() => {
@@ -40,7 +37,7 @@ const Navbar = () => {
       <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-border dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/contact" className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl gradient-hero flex items-center justify-center">
                 <Droplets className="w-5 h-5 text-white" />
               </div>
@@ -54,30 +51,24 @@ const Navbar = () => {
               {links.map((l) => (
                 <NavLink key={l.to} to={l.to} className={navClass}>{l.label}</NavLink>
               ))}
-              {user && !isAdmin && (
-                <NavLink to="/dashboard" className={navClass}>Laundry Update</NavLink>
-              )}
             </nav>
 
             <div className="flex items-center gap-2">
               <button onClick={toggle} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Toggle theme">
                 {dark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-              {user && <NotificationBell />}
-              {user ? (
+              {user && isAdmin ? (
                 <div className="hidden sm:flex items-center gap-2">
-                  {isAdmin && (
-                    <Link to="/admin" className="px-3 py-1.5 text-sm font-medium bg-navy text-white rounded-lg hover:bg-navy-dark">
-                      Admin
-                    </Link>
-                  )}
+                  <Link to="/admin" className="px-3 py-1.5 text-sm font-medium bg-navy text-white rounded-lg hover:bg-navy-dark">
+                    Admin
+                  </Link>
                   <button onClick={() => setLogoutOpen(true)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
                     <LogOut className="w-5 h-5" />
                   </button>
                 </div>
               ) : (
                 <Link to="/login" className="hidden sm:flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-navy dark:text-sky border border-navy/20 rounded-lg">
-                  <User className="w-4 h-4" /> Login
+                  <Shield className="w-4 h-4" /> Admin Login
                 </Link>
               )}
               <button className="lg:hidden p-2" onClick={() => setOpen(!open)}>
@@ -103,32 +94,46 @@ const Navbar = () => {
                 className="lg:hidden relative z-40 border-t border-border dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden"
               >
               <div className="px-4 py-4 flex flex-col gap-3">
-                <Link
-                  to="/about"
-                  onClick={() => setOpen(false)}
-                  className={`py-2 font-medium ${location.pathname === "/about" ? "text-sky" : ""}`}
-                >
-                  About
-                </Link>
-                {user ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      setLogoutOpen(true);
-                    }}
-                    className="flex items-center gap-2 py-2 font-medium text-red-500 text-left"
+                {links.map((l) => (
+                  <NavLink
+                    key={l.to}
+                    to={l.to}
+                    onClick={() => setOpen(false)}
+                    className={({ isActive }) =>
+                      `py-2 font-medium ${isActive ? "text-sky" : ""}`
+                    }
                   >
-                    <LogOut className="w-5 h-5" />
-                    Sign Out
-                  </button>
+                    {l.label}
+                  </NavLink>
+                ))}
+                {user && isAdmin ? (
+                  <>
+                    <Link
+                      to="/admin"
+                      onClick={() => setOpen(false)}
+                      className="py-2 font-medium text-sky"
+                    >
+                      Admin Dashboard
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpen(false);
+                        setLogoutOpen(true);
+                      }}
+                      className="flex items-center gap-2 py-2 font-medium text-red-500 text-left"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      Sign Out
+                    </button>
+                  </>
                 ) : (
                   <Link
                     to="/login"
                     onClick={() => setOpen(false)}
                     className="text-center py-2 border border-border dark:border-slate-600 rounded-xl font-medium"
                   >
-                    Login
+                    Admin Login
                   </Link>
                 )}
               </div>

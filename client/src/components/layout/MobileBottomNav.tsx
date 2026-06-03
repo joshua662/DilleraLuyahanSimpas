@@ -1,15 +1,14 @@
 import { NavLink } from "react-router-dom";
-import { Home, Calendar, Phone, User } from "lucide-react";
+import { Phone, Search, Shield } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
 const navItems = [
-  { to: "/", label: "Home", icon: Home },
-  { to: "/booking", label: "Booking", icon: Calendar },
+  { to: "/track", label: "Track", icon: Search },
   { to: "/contact", label: "Contact", icon: Phone },
 ];
 
 const MobileBottomNav = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `flex flex-col items-center gap-0.5 text-[10px] font-medium max-w-[4.5rem] text-center leading-tight ${
@@ -25,14 +24,14 @@ const MobileBottomNav = () => {
             {label}
           </NavLink>
         ))}
-        {user ? (
-          <NavLink to="/dashboard" className={linkClass}>
-            <User className="w-5 h-5 shrink-0" />
-            Laundry Update
+        {user && isAdmin ? (
+          <NavLink to="/admin" className={linkClass}>
+            <Shield className="w-5 h-5 shrink-0" />
+            Admin
           </NavLink>
         ) : (
           <NavLink to="/login" className={linkClass}>
-            <User className="w-5 h-5 shrink-0" />
+            <Shield className="w-5 h-5 shrink-0" />
             Login
           </NavLink>
         )}

@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import ScrollToTop from "../components/ui/ScrollToTop";
 import { AuthProvider } from "../contexts/AuthContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
@@ -7,19 +7,13 @@ import { NotificationProvider } from "../contexts/NotificationContext";
 import PublicLayout from "../layouts/PublicLayout";
 import AdminLayout from "../layouts/AdminLayout";
 import ProtectedRoute from "./ProtectedRoute";
-import HomePage from "../pages/public/HomePage";
 import ServicesPage from "../pages/public/ServicesPage";
 import PricingPage from "../pages/public/PricingPage";
-import BookingPage from "../pages/public/BookingPage";
 import TrackPage from "../pages/public/TrackPage";
-import AboutPage from "../pages/public/AboutPage";
 import ContactPage from "../pages/public/ContactPage";
 import LoginPage from "../pages/Auth/LoginPage";
-import RegisterPage from "../pages/Auth/RegisterPage";
 import ForgotPasswordPage from "../pages/Auth/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/Auth/ResetPasswordPage";
-import CustomerDashboard from "../pages/customer/CustomerDashboard";
-import NotificationsPage from "../pages/customer/NotificationsPage";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminOrders from "../pages/admin/AdminOrders";
 import AdminCustomers from "../pages/admin/AdminCustomers";
@@ -36,18 +30,18 @@ const AppRoutes = () => (
           <NotificationProvider>
             <Routes>
               <Route element={<PublicLayout />}>
-                <Route path="/" element={<HomePage />} />
+                <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/services" element={<ServicesPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/booking" element={<BookingPage />} />
+                <Route path="/booking" element={<Navigate to="/login" replace />} />
                 <Route path="/track" element={<TrackPage />} />
-                <Route path="/about" element={<AboutPage />} />
+                <Route path="/about" element={<Navigate to="/login" replace />} />
                 <Route path="/contact" element={<ContactPage />} />
-                <Route path="/dashboard" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
-                <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<Navigate to="/login" replace />} />
+                <Route path="/notifications" element={<Navigate to="/login" replace />} />
               </Route>
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/register" element={<Navigate to="/login" replace />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route

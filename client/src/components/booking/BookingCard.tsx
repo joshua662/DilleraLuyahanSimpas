@@ -83,7 +83,7 @@ const BookingCard = ({
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        {showActions && (booking.can_edit ?? true) && !isFinished(booking) && booking.status !== "cancelled" && onEdit && (
+        {showActions && onEdit && !isFinished(booking) && booking.status !== "cancelled" && (
           <button
             type="button"
             onClick={onEdit}
@@ -106,7 +106,7 @@ const BookingCard = ({
             Cancelled
           </span>
         )}
-        {onDelete && booking.status === "cancelled" && (booking.can_delete ?? true) && (
+        {onDelete && (booking.can_delete ?? true) && (
           <button
             type="button"
             onClick={onDelete}

@@ -13,6 +13,9 @@ const AdminService = {
   bookings: (params?: { status?: string; search?: string; page?: number; per_page?: number; is_done?: boolean }) =>
     AxiosInstance.get<PaginatedResponse<Booking>>("/admin/bookings", { params }),
 
+  createBooking: (data: Record<string, unknown>) =>
+    AxiosInstance.post<{ booking: Booking; message: string }>("/admin/bookings", data),
+
   updateBookingStatus: (id: number, status: BookingStatus, delivery_rider?: string) =>
     AxiosInstance.patch<{ booking: Booking }>(`/admin/bookings/${id}/status`, { status, delivery_rider }),
 
@@ -31,8 +34,17 @@ const AdminService = {
   deleteBooking: (id: number) =>
     AxiosInstance.delete(`/admin/bookings/${id}`),
 
-  customers: (params?: { search?: string; page?: number }) =>
+  customers: (params?: { search?: string; page?: number; per_page?: number }) =>
     AxiosInstance.get<PaginatedResponse<User & { bookings_count: number }>>("/admin/customers", { params }),
+
+  createCustomer: (data: { name: string; email: string; phone?: string; password?: string }) =>
+    AxiosInstance.post<{ customer: User; message: string }>("/admin/customers", data),
+
+  updateCustomer: (id: number, data: { name?: string; email?: string; phone?: string; password?: string }) =>
+    AxiosInstance.put<{ customer: User; message: string }>(`/admin/customers/${id}`, data),
+
+  deleteCustomer: (id: number) =>
+    AxiosInstance.delete<{ message: string }>(`/admin/customers/${id}`),
 
   payments: (params?: { status?: string; search?: string; page?: number }) =>
     AxiosInstance.get<PaginatedResponse<Payment & { booking: Booking }>>("/admin/payments", { params }),

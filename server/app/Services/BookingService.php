@@ -27,6 +27,7 @@ class BookingService
             'full_name' => $data['full_name'],
             'phone' => $data['phone'],
             'email' => $data['email'] ?? null,
+            'customer_type' => $data['customer_type'] ?? 'walk_in',
             'address' => $data['address'],
             'pickup_date' => $data['pickup_date'] ?? null,
             'pickup_time' => $data['pickup_time'] ?? null,
@@ -35,7 +36,7 @@ class BookingService
             'status' => BookingStatus::Pending->value,
             'tracking_code' => Booking::generateTrackingCode(),
             'total_price' => $totalPrice,
-            'payment_method' => $data['payment_method'] ?? 'cash',
+            'payment_method' => 'cash',
             'latitude' => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
             'is_done' => false,
@@ -44,7 +45,7 @@ class BookingService
         Payment::create([
             'booking_id' => $booking->id,
             'amount' => $totalPrice,
-            'payment_method' => $data['payment_method'] ?? 'cash',
+            'payment_method' => 'cash',
             'payment_status' => 'pending',
         ]);
 
@@ -54,25 +55,36 @@ class BookingService
         return $booking;
     }
 
-    public function updateBooking(Booking $booking, array $data): Booking
+    public function updateBooking(Booking $booking, array $data, bool $asAdmin = false): Booking
     {
-        if (! $booking->canEdit()) {
+        if ($booking->status === BookingStatus::Cancelled->value) {
+            throw new \InvalidArgumentException('Cancelled bookings cannot be edited.');
+        }
+
+        $scheduleOnly = $this->isScheduleOnlyUpdate($data);
+
+        if (! $booking->canEdit() && ! ($asAdmin && $scheduleOnly)) {
             throw new \InvalidArgumentException('Booking can no longer be edited.');
+        }
+
+        if (array_key_exists('pickup_time', $data)) {
+            $data['pickup_time'] = Booking::normalizePickupTime($data['pickup_time']);
         }
 
         $weight = (float) ($data['weight'] ?? $booking->weight);
         $previousStatus = $booking->status;
         $previousPickupDate = $booking->pickup_date?->format('Y-m-d');
-        $previousPickupTime = $booking->pickup_time;
+        $previousPickupTime = Booking::normalizePickupTime($booking->pickup_time);
         $updates = [
             'full_name' => $data['full_name'] ?? $booking->full_name,
             'phone' => $data['phone'] ?? $booking->phone,
+            'customer_type' => $data['customer_type'] ?? $booking->customer_type,
             'address' => $data['address'] ?? $booking->address,
             'pickup_date' => array_key_exists('pickup_date', $data) ? $data['pickup_date'] : $booking->pickup_date,
             'pickup_time' => array_key_exists('pickup_time', $data) ? $data['pickup_time'] : $booking->pickup_time,
             'weight' => $weight,
             'notes' => $data['notes'] ?? $booking->notes,
-            'payment_method' => $data['payment_method'] ?? $booking->payment_method,
+            'payment_method' => 'cash',
             'latitude' => $data['latitude'] ?? $booking->latitude,
             'longitude' => $data['longitude'] ?? $booking->longitude,
             'total_price' => Booking::calculatePrice($weight),
@@ -86,7 +98,11 @@ class BookingService
             $scheduleChanged &&
             $updates['pickup_date'] &&
             $updates['pickup_time'] &&
-            in_array($previousStatus, [BookingStatus::Pending->value, BookingStatus::Confirmed->value], true)
+            in_array($previousStatus, [
+                BookingStatus::Pending->value,
+                BookingStatus::Confirmed->value,
+                BookingStatus::PickupScheduled->value,
+            ], true)
         ) {
             $updates['status'] = BookingStatus::PickupScheduled->value;
         }
@@ -105,6 +121,13 @@ class BookingService
         return $updated;
     }
 
+    private function isScheduleOnlyUpdate(array $data): bool
+    {
+        $keys = array_keys($data);
+
+        return $keys !== [] && empty(array_diff($keys, ['pickup_date', 'pickup_time']));
+    }
+
     public function updateStatus(Booking $booking, string $status, ?string $deliveryRider = null): Booking
     {
         $previous = $booking->status;
@@ -113,14 +136,21 @@ class BookingService
             $updates['delivery_rider'] = $deliveryRider;
         }
         if ($status === BookingStatus::Done->value) {
+            $status = BookingStatus::Delivered->value;
+            $updates['status'] = $status;
             $updates['is_done'] = true;
         }
 
         $updated = $this->repository->update($booking, $updates);
+
+        if ($status === BookingStatus::Delivered->value) {
+            $this->markPaymentReceived($updated);
+        }
+
         $statusEnum = BookingStatus::tryFrom($status);
         $message = $statusEnum?->notificationMessage() ?? "Status updated to {$status}";
 
-        event(new BookingStatusChanged($updated, $previous, $message));
+        event(new BookingStatusChanged($updated->fresh(['payment', 'user']), $previous, $message));
 
         return $updated;
     }
@@ -128,23 +158,32 @@ class BookingService
     public function markDone(Booking $booking, bool $done = true): Booking
     {
         $previous = $booking->status;
-        $updates = ['is_done' => $done];
-        if ($done) {
-            $updates['status'] = BookingStatus::Done->value;
-        }
-
-        $updated = $this->repository->update($booking, $updates);
-        $message = $done
-            ? 'Your laundry is finished and ready for pickup/delivery.'
-            : 'Your order has been marked as not done yet. We will continue processing.';
 
         if ($done) {
-            $this->notificationService->notifyFinished($updated);
-        } else {
-            event(new BookingStatusChanged($updated, $previous, $message));
+            $updated = $this->repository->update($booking, [
+                'is_done' => true,
+                'status' => BookingStatus::Delivered->value,
+            ]);
+            $this->markPaymentReceived($updated);
+            $message = BookingStatus::Delivered->notificationMessage();
+            event(new BookingStatusChanged($updated->fresh(['payment', 'user']), $previous, $message));
+
+            return $updated;
         }
+
+        $updated = $this->repository->update($booking, ['is_done' => false]);
+        $message = 'Your order has been marked as not done yet. We will continue processing.';
+        event(new BookingStatusChanged($updated, $previous, $message));
 
         return $updated;
+    }
+
+    protected function markPaymentReceived(Booking $booking): void
+    {
+        $payment = $booking->payment ?? $booking->payment()->first();
+        if ($payment && $payment->payment_status !== 'paid') {
+            $payment->update(['payment_status' => 'paid']);
+        }
     }
 
     public function adminCancelBooking(Booking $booking): Booking

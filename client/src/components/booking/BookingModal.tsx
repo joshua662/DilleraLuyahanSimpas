@@ -6,13 +6,21 @@ import StatusBadge from "./StatusBadge";
 import StatusTimeline from "./StatusTimeline";
 import AdminService from "../../services/AdminService";
 import { useToast } from "../../contexts/ToastContext";
-import { formatPickupSchedule, formatPickupTime12h, PICKUP_TIME_SLOTS, STATUS_LABELS } from "../../utils/constants";
+import { getApiErrorMessage } from "../../utils/apiError";
+import {
+  formatPickupSchedule,
+  formatPickupTime12h,
+  PICKUP_TIME_SLOTS,
+  STATUS_LABELS,
+  toDateInputValue,
+  toPickupTimeValue,
+} from "../../utils/constants";
 
 interface Props {
   booking: Booking | null;
   open: boolean;
   onClose: () => void;
-  onUpdated: () => void;
+  onUpdated: (booking?: Booking) => void;
 }
 
 const BookingModal = ({ booking, open, onClose, onUpdated }: Props) => {
@@ -30,15 +38,25 @@ const BookingModal = ({ booking, open, onClose, onUpdated }: Props) => {
     }
     if (booking) {
       setDisplayStatus(booking.status);
-      setPickupDate(booking.pickup_date || "");
-      setPickupTime(booking.pickup_time || "");
+      setPickupDate(toDateInputValue(booking.pickup_date));
+      setPickupTime(toPickupTimeValue(booking.pickup_time) || PICKUP_TIME_SLOTS[2]);
     }
   }, [open, booking]);
 
   if (!booking) return null;
 
   const isLocked =
-    booking.is_finished || booking.is_done || booking.status === "done" || booking.status === "cancelled";
+    booking.is_finished ||
+    booking.is_done ||
+    booking.status === "done" ||
+    booking.status === "delivered" ||
+    booking.status === "cancelled";
+
+  const canEditSchedule =
+    booking.status !== "cancelled" &&
+    booking.status !== "delivered" &&
+    booking.status !== "done" &&
+    !booking.is_done;
 
   const handleStatusSelect = async (newStatus: BookingStatus) => {
     if (newStatus === booking.status && !booking.is_done) return;
@@ -50,7 +68,7 @@ const BookingModal = ({ booking, open, onClose, onUpdated }: Props) => {
     try {
       if (newStatus === "done") {
         await AdminService.markDone(booking.id);
-        showToast("Marked as Finished — customer notified");
+        showToast("Marked as Delivered — payment recorded on dashboard");
       } else {
         await AdminService.updateBookingStatus(booking.id, newStatus);
         showToast(`Status updated to ${label} — customer notified`);
@@ -97,12 +115,14 @@ const BookingModal = ({ booking, open, onClose, onUpdated }: Props) => {
         pickup_time: pickupTime,
       });
       setDisplayStatus(res.data.booking.status);
-      setPickupDate(res.data.booking.pickup_date || pickupDate);
-      setPickupTime(res.data.booking.pickup_time || pickupTime);
+      const saved = res.data.booking;
+      setDisplayStatus(saved.status);
+      setPickupDate(toDateInputValue(saved.pickup_date) || pickupDate);
+      setPickupTime(toPickupTimeValue(saved.pickup_time) || pickupTime);
       showToast("Pickup schedule saved - customer notified");
-      onUpdated();
-    } catch {
-      showToast("Failed to save pickup schedule", "error");
+      onUpdated(saved);
+    } catch (err) {
+      showToast(getApiErrorMessage(err, "Failed to save pickup schedule"), "error");
     } finally {
       setScheduleLoading(false);
     }
@@ -155,21 +175,23 @@ const BookingModal = ({ booking, open, onClose, onUpdated }: Props) => {
                 <p><strong>Tracking:</strong> {booking.tracking_code}</p>
               </div>
 
-              {!isLocked && (
+              {canEditSchedule && (
                 <div className="rounded-xl border border-border dark:border-slate-700 p-4 space-y-3">
                   <p className="font-semibold text-sm text-navy dark:text-white">Pickup Schedule</p>
+                  <p className="text-xs text-muted">Change date or time, then save. The customer will be notified.</p>
                   <div className="grid sm:grid-cols-2 gap-3">
                     <input
                       type="date"
                       value={pickupDate}
-                      min={new Date().toISOString().split("T")[0]}
                       onChange={(e) => setPickupDate(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-border dark:border-slate-600 bg-surface dark:bg-slate-900 focus:ring-2 focus:ring-sky outline-none"
+                      disabled={scheduleLoading}
+                      className="w-full px-3 py-2.5 rounded-xl border border-border dark:border-slate-600 bg-white dark:bg-slate-900 text-navy dark:text-white focus:ring-2 focus:ring-sky outline-none disabled:opacity-60"
                     />
                     <select
                       value={pickupTime}
                       onChange={(e) => setPickupTime(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-border dark:border-slate-600 bg-surface dark:bg-slate-900 focus:ring-2 focus:ring-sky outline-none"
+                      disabled={scheduleLoading}
+                      className="w-full px-3 py-2.5 rounded-xl border border-border dark:border-slate-600 bg-white dark:bg-slate-900 text-navy dark:text-white focus:ring-2 focus:ring-sky outline-none disabled:opacity-60"
                     >
                       <option value="">Select time</option>
                       {PICKUP_TIME_SLOTS.map((t) => (

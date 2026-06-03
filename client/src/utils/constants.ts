@@ -78,10 +78,12 @@ export const PICKUP_TIME_SLOTS = [
   "18:00",
 ] as const;
 
-export const PAYMENT_METHODS = [
-  { value: "cash", label: "Cash" },
-  { value: "gcash", label: "GCash" },
+export const CUSTOMER_TYPES = [
+  { value: "walk_in", label: "Walk-in" },
+  { value: "pick_up", label: "Pick-up" },
 ] as const;
+
+export const PAYMENT_METHODS = [{ value: "cash", label: "Cash" }] as const;
 
 /** Display 24h slot (e.g. "15:00") as 12-hour time with AM/PM */
 export function formatPickupTime12h(time24: string): string {
@@ -93,6 +95,34 @@ export function formatPickupTime12h(time24: string): string {
   else if (hour > 12) hour -= 12;
   return `${hour}:${mStr} ${period}`;
 }
+
+/** Normalize API / DB times for `<select>` (HH:mm, matches PICKUP_TIME_SLOTS). */
+export function toPickupTimeValue(value?: string | null): string {
+  if (!value) return "";
+  const trimmed = value.trim();
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return "";
+  const hour = String(parseInt(match[1], 10)).padStart(2, "0");
+  const minute = match[2];
+  const normalized = `${hour}:${minute}`;
+  return (PICKUP_TIME_SLOTS as readonly string[]).includes(normalized) ? normalized : "";
+}
+
+/** Normalize API / DB dates for HTML `<input type="date">` (YYYY-MM-DD). */
+export function toDateInputValue(value?: string | null): string {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const isoDate = value.split("T")[0];
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return isoDate;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  const y = parsed.getFullYear();
+  const m = String(parsed.getMonth() + 1).padStart(2, "0");
+  const d = String(parsed.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+export const todayDateInputValue = () => new Date().toISOString().split("T")[0];
 
 export function formatPickupSchedule(date?: string | null, time?: string | null): string {
   if (!date && !time) return "Not scheduled";
